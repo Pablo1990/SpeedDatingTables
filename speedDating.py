@@ -77,25 +77,19 @@ for numPerson in listOfPeople.index:
     availableChoices[numPerson] = listOfPeople.index[listOfPeople.Groups[numPerson] != listOfPeople.Groups]
 
 
+# In[ ]:
+
+
+
+
+
 # In[6]:
-
-
-availableChoices[1]
-
-
-# In[7]:
 
 
 import random
 import numpy as np
 import math
 
-availableChoicesPrev = availableChoices;
-availableChoicesCurrent = availableChoices;
-
-remainingPeople = list(listOfPeople.index);
-groupsPerTime = list();
-
 
 # In[ ]:
 
@@ -103,91 +97,145 @@ groupsPerTime = list();
 
 
 
-# In[8]:
+# In[ ]:
 
 
-numTime = 0
-while len(groupsPerTime) < peopleInGroup*numberOfTimes:
-    print(numTime)
+uniquePeopleMetBest = 0;
+repeatedPeopleTotalBest = 100;
+groupsPerTimeBest = list();
+while uniquePeopleMetBest <= 60 and repeatedPeopleTotalBest >= 1:
+    availableChoicesPrev = availableChoices.copy();
+    availableChoicesCurrent = availableChoices.copy();
+
     remainingPeople = list(listOfPeople.index);
-    #try:
-    while len(remainingPeople) > 0:
-        random_num = random.choice(remainingPeople)
-        #print(random_num)
-        currentGroup = [random_num];
-        remainingPeople.remove(random_num);
+    groupsPerTime = list();
+    numTime = 0
+    while len(groupsPerTime)+1 < ((max(listOfPeople.index) + 1) / peopleInGroup)*numberOfTimes or len(remainingPeople) > 0:
+        #print(numTime)
+        remainingPeople = list(listOfPeople.index);
+        try:
+            while len(remainingPeople) > 0:
+                random_num = random.choice(remainingPeople)
+                #print(random_num)
+                currentGroup = [random_num];
+                remainingPeople.remove(random_num);
 
-        while len(currentGroup) < peopleInGroup:
-            currentAvailableGroup = availableChoicesCurrent[currentGroup[0]]
-            for person in currentGroup:
-                currentAvailableGroup = currentAvailableGroup.intersection(availableChoicesCurrent[person])
-            currentAvailableGroup = currentAvailableGroup.intersection(remainingPeople)
-            random_num = random.choice(currentAvailableGroup)
-            #print(random_num)
-            currentGroup.append(random_num);
-            remainingPeople.remove(random_num);
+                while len(currentGroup) < peopleInGroup and len(remainingPeople) > 0:
+                    currentAvailableGroup = availableChoicesCurrent[currentGroup[0]]
+                    for person in currentGroup:
+                        currentAvailableGroup = currentAvailableGroup.intersection(availableChoicesCurrent[person])
+                    currentAvailableGroup = currentAvailableGroup.intersection(remainingPeople)
+                    random_num = random.choice(currentAvailableGroup)
+                    #print(random_num)
+                    currentGroup.append(random_num);
+                    remainingPeople.remove(random_num);
 
-        for person in currentGroup:
-            for otherPerson in currentGroup:
-                availableChoicesCurrent[person] = availableChoicesCurrent[person].delete(availableChoicesCurrent[person] == otherPerson)
+                #for person in currentGroup:
+                    #for otherPerson in currentGroup:
+                        #availableChoicesCurrent[person] = availableChoicesCurrent[person].delete(availableChoicesCurrent[person] == otherPerson)
 
-        groupsPerTime.append(currentGroup);
-    numTime = numTime + 1;
-    #except Exception:
-        #numTime = 0;
-        #availableChoicesCurrent = availableChoices;
-        #groupsPerTime = list();
+                groupsPerTime.append(currentGroup);
+            numTime = numTime + 1;
+        except Exception as e:
+            #print(e)
+            #print(remainingPeople)
+            numTime = 0;
+            availableChoicesCurrent = availableChoices.copy();
+            groupsPerTime = list();
 
+    # Calculate average number of people that have seen each other more than once
+    repeatedPeopleTotal = 0;
+    uniquePeopleMet = 0;
+    for idPerson in listOfPeople.index:
+        unique_numbers = list();
+        for group in groupsPerTime:
+            if idPerson in group:
+                for item in group:
+                    unique_numbers.append(item)
+                unique_numbers.remove(idPerson)
+        repeatedPeopleTotal += len(unique_numbers) - len(set(unique_numbers))
+        uniquePeopleMet += len(set(unique_numbers))
 
-# In[13]:
-
-
-remainingPeople
+    uniquePeopleMetCurrent = uniquePeopleMet / (max(listOfPeople.index) + 1)
+    repeatedPeopleTotalCurrent = repeatedPeopleTotal / (max(listOfPeople.index) + 1)
+        
+    if uniquePeopleMetCurrent > uniquePeopleMetBest and repeatedPeopleTotalCurrent < repeatedPeopleTotalBest:
+        print('New Best!')
+        groupsPerTimeBest = groupsPerTime.copy();
+        uniquePeopleMetBest = uniquePeopleMetCurrent;
+        repeatedPeopleTotalBest = repeatedPeopleTotalCurrent;
+        print(uniquePeopleMetBest)
+        print(repeatedPeopleTotalBest)
 
 
 # In[ ]:
 
 
-unique_numbers = list()
-for group in groupsPerTime:
-    for item in group:
-        unique_numbers.append(item)
-print(set(unique_numbers))
-len(unique_numbers)
+fileName = 'groupsOfPeople_N_' + str(peopleInGroup) + '_times_' + str(numberOfTimes) + '.xlsx'
+fileName
 
 
-# In[28]:
+# In[ ]:
 
 
-availableChoicesCurrent = availableChoices;
-groupsPerTime = list();
-remainingPeople = list(listOfPeople.index);
-#try:
-while len(remainingPeople) > 0:
-    random_num = random.choice(remainingPeople)
-    #print(random_num)
-    currentGroup = [random_num];
-    remainingPeople.remove(random_num);
+numGroup = 1;
+numRound = 1;
+maxGroups = math.ceil((max(listOfPeople.index) + 1) / peopleInGroup);
 
-    while len(currentGroup) < peopleInGroup:
-        currentAvailableGroup = availableChoicesCurrent[currentGroup[0]]
-        for person in currentGroup:
-            currentAvailableGroup = currentAvailableGroup.intersection(availableChoicesCurrent[person])
-        currentAvailableGroup = currentAvailableGroup.intersection(remainingPeople)
-        random_num = random.choice(currentAvailableGroup)
-        #print(random_num)
-        currentGroup.append(random_num);
-        remainingPeople.remove(random_num);
+columnNames = list();
+for num in range(maxGroups):
+    columnNames.append('Group' + str(num+1))
 
-    for person in currentGroup:
-        for otherPerson in currentGroup:
-            availableChoicesCurrent[person] = availableChoicesCurrent[person].delete(availableChoicesCurrent[person] == otherPerson)
-
-    groupsPerTime.append(currentGroup);
-
-
-# In[29]:
+df = pd.DataFrame(columns=columnNames, index = range(peopleInGroup))
+#print('Round 1:')
+with pd.ExcelWriter(fileName) as writer:
+    df = pd.DataFrame(columns=columnNames, index = range(peopleInGroup))
+    for group in groupsPerTimeBest:
+        #print('Group ' + str(numGroup) + ':')
+        numPerson = 0;
+        for person in group:
+            #print(str(listOfPeople.FirstName[person]) + ' ' + listOfPeople.LastName[person] + ' (' + listOfPeople.Groups[person] + ')')
+            df.loc[numPerson, 'Group' + str(numGroup)] = (str(listOfPeople.FirstName[person]) + ' ' + listOfPeople.LastName[person] + ' (' + listOfPeople.Groups[person] + ')')
+            numPerson = numPerson + 1;
+        numGroup = numGroup + 1;
+        if numGroup > maxGroups:
+            numGroup = 1
+            #print('Round ' + str(numRound) + ':')
+            df.to_excel(writer, sheet_name='Round' + str(numRound))
+            numRound = numRound + 1
 
 
-groupsPerTime
+# In[ ]:
+
+
+
+
+
+# In[ ]:
+
+
+repeatedPeopleTotal = 0;
+uniquePeopleMet = 0;
+for idPerson in listOfPeople.index:
+    unique_numbers = list();
+    for group in groupsPerTimeBest:
+        if idPerson in group:
+            for item in group:
+                unique_numbers.append(item)
+            unique_numbers.remove(idPerson)
+    
+    #print(unique_numbers)
+    repeatedPeopleTotal += len(unique_numbers) - len(set(unique_numbers))
+    uniquePeopleMet += len(set(unique_numbers))
+
+uniquePeopleMetCurrent = uniquePeopleMet / (max(listOfPeople.index) + 1)
+repeatedPeopleTotalCurrent = repeatedPeopleTotal / (max(listOfPeople.index) + 1)
+print(uniquePeopleMetCurrent)
+print(repeatedPeopleTotalCurrent)
+
+
+# In[ ]:
+
+
+
 
