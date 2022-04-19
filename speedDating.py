@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[1]:
+# In[ ]:
 
 
 ## Speed dating algorithm:
@@ -10,65 +10,39 @@
 # 10 times
 
 #number of people per group
-peopleInGroup = 6
+peopleInGroup = 7
 
-numberOfTimes = 12
+numberOfTimes = 10
+
+#How optimize it we want it to be
+numberOfBestMinimum = 6
 
 
-# In[2]:
+# In[ ]:
+
+
+import random
+import numpy as np
+import math
+import pandas as pd
+
+
+# In[ ]:
 
 
 # Read excel/csv
-import pandas as pd
-
 fileName = 'ListOfPeoplewithPI.xlsx'
 listOfPeople = pd.read_excel(fileName)
+listOfPeople
 
-print(listOfPeople)
 
-
-# In[3]:
+# In[ ]:
 
 
 max(listOfPeople.index) + 1
 
 
-# In[4]:
-
-
-# https://stackoverflow.com/questions/36429507/python-combinations-without-repetitions
-# Author: hahho
-from itertools import chain, repeat, count, islice
-from collections import Counter
-
-
-def repeat_chain(values, counts):
-    return chain.from_iterable(map(repeat, values, counts))
-
-
-def unique_combinations_from_value_counts(values, counts, r):
-    n = len(counts)
-    indices = list(islice(repeat_chain(count(), counts), r))
-    if len(indices) < r:
-        return
-    while True:
-        yield tuple(values[i] for i in indices)
-        for i, j in zip(reversed(range(r)), repeat_chain(reversed(range(n)), reversed(counts))):
-            if indices[i] != j:
-                break
-        else:
-            return
-        j = indices[i] + 1
-        for i, j in zip(range(i, r), repeat_chain(count(j), counts[j:])):
-            indices[i] = j
-
-
-def unique_combinations(iterable, r):
-    values, counts = zip(*Counter(iterable).items())
-    return unique_combinations_from_value_counts(values, counts, r)
-
-
-# In[5]:
+# In[ ]:
 
 
 # Create list of available people for each person
@@ -83,27 +57,15 @@ for numPerson in listOfPeople.index:
 
 
 
-# In[6]:
-
-
-import random
-import numpy as np
-import math
-
-
-# In[ ]:
-
-
-
-
-
 # In[ ]:
 
 
 uniquePeopleMetBest = 0;
 repeatedPeopleTotalBest = 100;
+membersSameLabBest = 100;
 groupsPerTimeBest = list();
-while uniquePeopleMetBest <= 60 and repeatedPeopleTotalBest >= 1:
+newBest = 0
+while newBest < numberOfBestMinimum:
     availableChoicesPrev = availableChoices.copy();
     availableChoicesCurrent = availableChoices.copy();
 
@@ -125,20 +87,24 @@ while uniquePeopleMetBest <= 60 and repeatedPeopleTotalBest >= 1:
                     for person in currentGroup:
                         currentAvailableGroup = currentAvailableGroup.intersection(availableChoicesCurrent[person])
                     currentAvailableGroup = currentAvailableGroup.intersection(remainingPeople)
-                    random_num = random.choice(currentAvailableGroup)
+                    if len(currentAvailableGroup) > 0:
+                        random_num = random.choice(currentAvailableGroup)
+                    else:
+                        random_num = random.choice(remainingPeople)
                     #print(random_num)
                     currentGroup.append(random_num);
                     remainingPeople.remove(random_num);
 
-                #for person in currentGroup:
-                    #for otherPerson in currentGroup:
-                        #availableChoicesCurrent[person] = availableChoicesCurrent[person].delete(availableChoicesCurrent[person] == otherPerson)
+                for person in currentGroup:
+                    for otherPerson in currentGroup:
+                        availableChoicesCurrent[person] = availableChoicesCurrent[person].delete(availableChoicesCurrent[person] == otherPerson)
 
                 groupsPerTime.append(currentGroup);
             numTime = numTime + 1;
         except Exception as e:
             #print(e)
             #print(remainingPeople)
+            #print(len(groupsPerTime))
             numTime = 0;
             availableChoicesCurrent = availableChoices.copy();
             groupsPerTime = list();
@@ -146,6 +112,7 @@ while uniquePeopleMetBest <= 60 and repeatedPeopleTotalBest >= 1:
     # Calculate average number of people that have seen each other more than once
     repeatedPeopleTotal = 0;
     uniquePeopleMet = 0;
+    membersSameLab = 0;
     for idPerson in listOfPeople.index:
         unique_numbers = list();
         for group in groupsPerTime:
@@ -153,19 +120,27 @@ while uniquePeopleMetBest <= 60 and repeatedPeopleTotalBest >= 1:
                 for item in group:
                     unique_numbers.append(item)
                 unique_numbers.remove(idPerson)
+
+        #print(unique_numbers)
         repeatedPeopleTotal += len(unique_numbers) - len(set(unique_numbers))
         uniquePeopleMet += len(set(unique_numbers))
+        membersSameLab += sum(listOfPeople.Groups[unique_numbers] == listOfPeople.Groups[idPerson])
+
 
     uniquePeopleMetCurrent = uniquePeopleMet / (max(listOfPeople.index) + 1)
     repeatedPeopleTotalCurrent = repeatedPeopleTotal / (max(listOfPeople.index) + 1)
+    membersSameLabCurrent = membersSameLab / (max(listOfPeople.index) + 1);
         
-    if uniquePeopleMetCurrent > uniquePeopleMetBest and repeatedPeopleTotalCurrent < repeatedPeopleTotalBest:
+    if uniquePeopleMetCurrent >= uniquePeopleMetBest and repeatedPeopleTotalCurrent <= repeatedPeopleTotalBest and membersSameLabCurrent <= membersSameLabBest:
         print('New Best!')
         groupsPerTimeBest = groupsPerTime.copy();
         uniquePeopleMetBest = uniquePeopleMetCurrent;
         repeatedPeopleTotalBest = repeatedPeopleTotalCurrent;
+        membersSameLabBest = membersSameLabCurrent;
         print(uniquePeopleMetBest)
         print(repeatedPeopleTotalBest)
+        print(membersSameLabBest)
+        newBest = newBest + 1
 
 
 # In[ ]:
@@ -214,8 +189,10 @@ with pd.ExcelWriter(fileName) as writer:
 # In[ ]:
 
 
+# Calculate average number of people that have seen each other more than once
 repeatedPeopleTotal = 0;
 uniquePeopleMet = 0;
+membersSameLab = 0;
 for idPerson in listOfPeople.index:
     unique_numbers = list();
     for group in groupsPerTimeBest:
@@ -223,15 +200,19 @@ for idPerson in listOfPeople.index:
             for item in group:
                 unique_numbers.append(item)
             unique_numbers.remove(idPerson)
-    
+
     #print(unique_numbers)
     repeatedPeopleTotal += len(unique_numbers) - len(set(unique_numbers))
     uniquePeopleMet += len(set(unique_numbers))
+    membersSameLab += sum(listOfPeople.Groups[unique_numbers] == listOfPeople.Groups[idPerson])
+
 
 uniquePeopleMetCurrent = uniquePeopleMet / (max(listOfPeople.index) + 1)
 repeatedPeopleTotalCurrent = repeatedPeopleTotal / (max(listOfPeople.index) + 1)
-print(uniquePeopleMetCurrent)
-print(repeatedPeopleTotalCurrent)
+membersSameLabCurrent = membersSameLab / (max(listOfPeople.index) + 1);
+print(uniquePeopleMetBest)
+print(repeatedPeopleTotalBest)
+print(membersSameLabBest)
 
 
 # In[ ]:
