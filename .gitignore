@@ -114,3 +114,5 @@ dmypy.json
 .pyre/
 *.xlsx
 .DS_Store
+*.txt
+*.zip
